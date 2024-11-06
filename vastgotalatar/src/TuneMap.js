@@ -214,6 +214,22 @@ function RecordTable({ records }) {
 function LocationModal({ location, records, onClose }) {
     const [location_name, landscape] = location.split(" | ");
 
+    // Add this useEffect
+    useEffect(() => {
+        const handleEscapeKey = (event) => {
+            if (event.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleEscapeKey);
+
+        // Cleanup function to remove the event listener
+        return () => {
+            document.removeEventListener('keydown', handleEscapeKey);
+        };
+    }, [onClose]);
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
             <div className="bg-white p-4 rounded-lg shadow-xl w-[98vw] mx-2">
