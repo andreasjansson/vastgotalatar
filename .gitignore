@@ -1,0 +1,8 @@
+vastgotalatar/.env
+__pycache__/
+*.pyc
+Untitled*.ipynb
+.ipynb_checkpoints/
+chat.ai
+hitta-folkmusiken.xls
+loc.cache*
