@@ -245,16 +245,29 @@ def get_locations(proveniens, landskap) -> list[Location]:
 
     multi_loc = geocode(", ".join(prov_parts), ls)
     if not multi_loc:
-        return part_locs
+        return first_if_close(part_locs)
 
     if all([is_close(loc.point, multi_loc.point) for loc in part_locs]):
         return [multi_loc]
 
-    return part_locs
+    return first_if_close(part_locs)
+
+
+def first_if_close(part_locs):
+    if not part_locs:
+        return []
+
+    for i, l1 in enumerate(part_locs):
+        for l2 in part_locs[i:]:
+            if not is_close(l1.point, l2.point):
+                return part_locs
+
+    return [part_locs[0]]
+
 
 
 def is_close(p1, p2):
-    return geodesic(p1, p2).km < 3
+    return geodesic(p1, p2).km < 12
 
 
 def is_in_bounds(p, bounds):
