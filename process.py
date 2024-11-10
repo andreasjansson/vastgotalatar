@@ -1,3 +1,7 @@
+# TODO:
+# Group items by socken
+
+
 import random
 import math
 import datetime
@@ -59,7 +63,6 @@ def get_collector_filter(row):
     return collector
 
 
-
 def get_song_type_filter(row):
     song_type = row["Låttyp eller visgenre"]
     if not song_type or not song_type.strip():
@@ -71,9 +74,9 @@ def get_song_type_filter(row):
 
     parts = [normalize_string(p).capitalize() for p in song_type.split(",")]
     return {
-            "main": parts[0],
-            "secondary": parts[1:],
-        }
+        "main": parts[0],
+        "secondary": parts[1:],
+    }
 
 
 def normalize_instrument(s):
@@ -81,13 +84,27 @@ def normalize_instrument(s):
         return ""
 
     s = s.replace("fioler", "fiol").replace("fiol 1", "fiol").replace("fiol 2", "fiol")
-    s = s.replace("liktonigt knappdragspel med svarta och vita tangenter vilket innebär att det egentligen inte är ett durspel", "dragspel")
+    s = s.replace(
+        "liktonigt knappdragspel med svarta och vita tangenter vilket innebär att det egentligen inte är ett durspel",
+        "dragspel",
+    )
     s = s.replace(" m.m", "")
 
     if "cittra" in s or "zittra" in s:
         return "cittra"
 
-    s = s.replace("1-", "en").replace("1", "en").replace("2-", "två").replace("2", "två").replace("3-", "tre").replace("3", "tre").replace("4-", "fyr").replace("4", "fyr").replace("5-", "fem").replace("5", "fem")
+    s = (
+        s.replace("1-", "en")
+        .replace("1", "en")
+        .replace("2-", "två")
+        .replace("2", "två")
+        .replace("3-", "tre")
+        .replace("3", "tre")
+        .replace("4-", "fyr")
+        .replace("4", "fyr")
+        .replace("5-", "fem")
+        .replace("5", "fem")
+    )
 
     return s
 
@@ -96,13 +113,15 @@ def normalize_string(s):
     return s.lower().split("(")[0].strip(" ?.,")
 
 
-
 def get_instrument_filter(row):
     instrument = row["Sång  instrument"]
     if not instrument or not instrument.strip():
         return []
 
-    parts = [normalize_instrument(normalize_string(p)).capitalize() for p in instrument.split(",")]
+    parts = [
+        normalize_instrument(normalize_string(p)).capitalize()
+        for p in instrument.split(",")
+    ]
     parts = [p for p in parts if p]
 
     return parts
@@ -140,7 +159,10 @@ def create_hitta_data():
         key = f"{prov} | {ls}"
         if key not in grouped:
             # randomly move coords a little bit
-            coords = [(c[0] + random.uniform(-0.01, 0.01), c[1] + random.uniform(-0.01, 0.01)) for c in row["coords"]]
+            coords = [
+                (c[0] + random.uniform(-0.01, 0.01), c[1] + random.uniform(-0.01, 0.01))
+                for c in row["coords"]
+            ]
             grouped[key] = {"coords": coords, "rows": []}
 
         grouped[key]["rows"].append(row)
@@ -265,7 +287,6 @@ def first_if_close(part_locs):
     return [part_locs[0]]
 
 
-
 def is_close(p1, p2):
     return geodesic(p1, p2).km < 12
 
@@ -282,6 +303,67 @@ def is_in_bounds(p, bounds):
 
     return min_lat <= p.latitude <= max_lat and min_long < p.longitude < max_long
 
+
+def geocode_lantmateriet(prov, ls):
+    # curl 'https://minkarta.lantmateriet.se/api/searchservice/searchinput?&searchtext=K%C3%A4llby' | jq .
+    # {
+    #   "antalsokresultat": 147,
+    #   "sokresultat": [
+    #     {
+    #       "typ": "ORTNAMN",
+    #       "position": {
+    #         "east": 401378,
+    #         "north": 6487224
+    #       },
+    #       "id": "4328929",
+    #       "headertext": "Källby",
+    #       "subtext": "Götene | Tätort"
+    #     },
+    #     {
+    #       "typ": "ORTNAMN",
+    #       "position": {
+    #         "east": 402866,
+    #         "north": 6486659
+    #       },
+    #       "id": "4272100",
+    #       "headertext": "Källby",
+    #       "subtext": "Götene | Bebyggelse"
+    #     },
+    #
+    # filter to exclude typ=ADRESS
+    #
+    # from pyproj import Transformer
+    # transformer = Transformer.from_crs("EPSG:3006", "EPSG:4326")
+    # lat, lng = transformer.transform(401378, 6487224)
+
+    # only query by prov, and use ls shapes to determine if a place is
+    # within landskap
+    #
+    # import geopandas as gpd
+    # from shapely.geometry import Point
+    #
+    # # Read GeoJSON
+    # gdf = gpd.read_file('polygon.geojson')
+    #
+    # point = Point(longitude, latitude)
+    # is_inside = gdf.geometry.contains(point).any()
+    #
+    # if there are more than one comma-separated prov, first search
+    # all of them. if there's no result, search each one individually
+    # and compare each search result if they're within 12km of each
+    # other to find clusters. only look for immediate next neighbors,
+    # e.g. Källebäcken, Gustav Adolf, Habo, Herrestad, Uddevalla
+    #
+    # if one of the comma-separated provs is a landskap as in
+    # "Fagerhult, Habo, Västergötland, Uddevalla, Bohuslän", recursively call
+    # geocode_lantmateriet("Fagerhult, Habo", "Västergötland"),
+    # geocode_lantmateriet("Uddevalla", "Bohuslän")
+    #
+    # lantmateriet doesnt fix spelling mistakes, so rename
+    # bovallsstrand to bovallstrand, etc. log all single places with no results
+
+
+    pass
 
 def geocode(prov, ls):
     query = f"{prov}, {ls}".strip(" ,")
